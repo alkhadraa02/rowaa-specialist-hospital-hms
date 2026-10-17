@@ -18,7 +18,7 @@ export default async function BedsPage({ searchParams }: Props) {
   const { lang, t } = await getT();
   const manage = can(auth.user.role, "beds.manage");
   const wards = await prisma.ward.findMany({
-    include: { branch: true, rooms: { include: { beds: { include: { admissions: { where: { status: "ACTIVE" }, include: { patient: true } } } }, orderBy: { label: "asc" } }, orderBy: { name: "asc" } } },
+    include: { branch: true, rooms: { include: { beds: { include: { admissions: { where: { status: "ACTIVE" }, include: { patient: true } } }, orderBy: { label: "asc" } } }, orderBy: { name: "asc" } } },
     orderBy: [{ branchId: "asc" }, { name: "asc" }],
   });
   const allBeds = wards.flatMap((w) => w.rooms.flatMap((r) => r.beds.map((b) => ({ ...b, ward: pick(lang, w.name, w.nameEn), room: r.name }))));
