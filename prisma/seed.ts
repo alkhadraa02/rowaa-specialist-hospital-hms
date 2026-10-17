@@ -39,9 +39,9 @@ async function main() {
   }
 
   // ---- public content
-  const branches = [];
+  const branches: Awaited<ReturnType<typeof prisma.branch.create>>[] = [];
   for (const b of BRANCHES) branches.push(await prisma.branch.create({ data: b }));
-  const specs = [];
+  const specs: Awaited<ReturnType<typeof prisma.specialty.create>>[] = [];
   for (const [slug, nameAr, nameEn, icon, isCenter, descAr, descEn, servicesAr, servicesEn] of SPECIALTIES)
     specs.push(await prisma.specialty.create({ data: { slug, nameAr, nameEn, icon, isCenter, descAr, descEn, servicesAr, servicesEn } }));
   for (const [nameAr, nameEn, tier, noteAr, noteEn] of INSURERS) await prisma.insurer.create({ data: { nameAr, nameEn, tier, noteAr, noteEn } });
@@ -57,7 +57,7 @@ async function main() {
   for (const [slug, titleAr, titleEn, dept, deptEn, city, cityEn, type, descAr, descEn, reqAr, reqEn] of JOBS)
     await prisma.job.create({ data: { slug, titleAr, titleEn, dept, deptEn, city, cityEn, type, descAr, descEn, reqAr, reqEn, postedAt: addDays(today0, -ri(2, 25)) } });
   for (const [code, nameEn, nameAr, category] of ICD10) await prisma.icd10.create({ data: { code, nameEn, nameAr, category } });
-  const drugs = [];
+  const drugs: Awaited<ReturnType<typeof prisma.drug.create>>[] = [];
   for (const [generic, name, nameAr, form, strength, stock, reorderLevel, unitPrice] of DRUGS)
     drugs.push(await prisma.drug.create({ data: { generic, name, nameAr, form, strength, stock, reorderLevel, unitPrice } }));
   for (const [genericA, genericB, severity, noteAr, noteEn] of INTERACTIONS) await prisma.drugInteraction.create({ data: { genericA, genericB, severity, noteAr, noteEn } });
