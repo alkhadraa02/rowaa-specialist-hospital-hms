@@ -8,7 +8,7 @@ import { authorize } from "@/lib/session";
 import { audit } from "@/lib/audit";
 import { vitalsSchema } from "@/lib/validation";
 import { getAiProvider } from "@/lib/ai";
-import { LAB_TESTS, RAD_TESTS, flagResult, labByCode, radByCode } from "@/lib/catalog";
+import { flagResult, labByCode, radByCode } from "@/lib/catalog";
 import { checkInteractions, worstSeverity } from "@/lib/interactions";
 import { invoiceEncounter } from "@/lib/billing-service";
 
@@ -225,4 +225,3 @@ export async function setClaimStatus(formData: FormData) {
   redirect("/hms/billing?ok=claim");
 }
 
-export const CATALOG_FOR_UI = { lab: LAB_TESTS.map((t) => ({ code: t.code, name: t.name })), rad: RAD_TESTS.map((t) => ({ code: t.code, name: t.name })) };
