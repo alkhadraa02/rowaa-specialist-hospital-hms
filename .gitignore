@@ -1,0 +1,15 @@
+node_modules
+.next
+dist
+out
+.env
+.env.local
+*.db
+*.db-journal
+prisma/*.db
+reference/
+extract-links.ps1
+.abdo/
+*.tsbuildinfo
+next-env.d.ts
+coverage

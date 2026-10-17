@@ -1,0 +1,508 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  nameEn       String?
+  role         String
+  passwordHash String
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+  doctor       Doctor?
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  kind      String   @default("staff")
+  userId    String?
+  patientId String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patient   Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model Branch {
+  id           String         @id @default(cuid())
+  slug         String         @unique
+  nameAr       String
+  nameEn       String
+  city         String
+  cityEn       String
+  addressAr    String
+  addressEn    String
+  phone        String
+  hours        String
+  beds         Int
+  clinics      Int
+  descAr       String
+  descEn       String
+  doctors      DoctorBranch[]
+  appointments Appointment[]
+  wards        Ward[]
+  encounters   Encounter[]
+}
+
+model Specialty {
+  id           String        @id @default(cuid())
+  slug         String        @unique
+  nameAr       String
+  nameEn       String
+  descAr       String
+  descEn       String
+  servicesAr   String
+  servicesEn   String
+  icon         String
+  isCenter     Boolean       @default(false)
+  doctors      Doctor[]
+  appointments Appointment[]
+}
+
+model Doctor {
+  id           String         @id @default(cuid())
+  slug         String         @unique
+  nameAr       String
+  nameEn       String
+  gender       String
+  titleAr      String
+  titleEn      String
+  specialtyId  String
+  languages    String
+  experience   Int
+  fee          Int
+  rating       Float
+  reviews      Int
+  bioAr        String
+  bioEn        String
+  educationAr  String
+  educationEn  String
+  userId       String?        @unique
+  specialty    Specialty      @relation(fields: [specialtyId], references: [id])
+  user         User?          @relation(fields: [userId], references: [id])
+  branches     DoctorBranch[]
+  appointments Appointment[]
+  encounters   Encounter[]
+}
+
+model DoctorBranch {
+  id        String @id @default(cuid())
+  doctorId  String
+  branchId  String
+  days      String
+  startHour Int
+  endHour   Int
+  doctor    Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  branch    Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, branchId])
+}
+
+model Patient {
+  id            String        @id @default(cuid())
+  mrn           String        @unique
+  nameAr        String
+  nameEn        String
+  nationalId    String        @unique
+  gender        String
+  dob           DateTime
+  phone         String
+  email         String?
+  insurer       String?
+  policyNo      String?
+  passwordHash  String?
+  bloodType     String?
+  allergies     String?
+  createdAt     DateTime      @default(now())
+  encounters    Encounter[]
+  appointments  Appointment[]
+  orders        Order[]
+  prescriptions Prescription[]
+  invoices      Invoice[]
+  claims        Claim[]
+  admissions    Admission[]
+  sessions      Session[]
+}
+
+model Appointment {
+  id          String    @id @default(cuid())
+  number      String    @unique
+  patientId   String?
+  doctorId    String
+  branchId    String
+  specialtyId String
+  start       DateTime
+  status      String    @default("BOOKED")
+  name        String
+  phone       String
+  nationalId  String?
+  notes       String?
+  queueNo     Int?
+  checkedInAt DateTime?
+  createdAt   DateTime  @default(now())
+  patient     Patient?  @relation(fields: [patientId], references: [id])
+  doctor      Doctor    @relation(fields: [doctorId], references: [id])
+  branch      Branch    @relation(fields: [branchId], references: [id])
+  specialty   Specialty @relation(fields: [specialtyId], references: [id])
+
+  @@index([doctorId, start])
+  @@index([start])
+}
+
+model Encounter {
+  id                 String      @id @default(cuid())
+  patientId          String
+  doctorId           String?
+  branchId           String?
+  type               String
+  status             String      @default("OPEN")
+  chiefComplaint     String?
+  startedAt          DateTime    @default(now())
+  endedAt            DateTime?
+  hr                 Int?
+  sbp                Int?
+  dbp                Int?
+  rr                 Int?
+  spo2               Int?
+  temp               Float?
+  gcs                Int?
+  pain               Int?
+  weight             Float?
+  triageSuggested    Int?
+  triageFinal        Int?
+  triageReasons      String?
+  triageAi           String?
+  triageConfirmedBy  String?
+  triageConfirmedAt  DateTime?
+  seenAt             DateTime?
+  disposition        String?
+  notes              String?
+  aiSummary          String?
+  aiSummaryBy        String?
+  aiSummaryConfirmed String?
+  patient            Patient     @relation(fields: [patientId], references: [id])
+  doctor             Doctor?     @relation(fields: [doctorId], references: [id])
+  branch             Branch?     @relation(fields: [branchId], references: [id])
+  diagnoses          Diagnosis[]
+  orders             Order[]
+  prescriptions      Prescription[]
+  charges            Charge[]
+  invoices           Invoice[]
+  claims             Claim[]
+  admissions         Admission[]
+
+  @@index([startedAt])
+  @@index([type, status])
+}
+
+model Icd10 {
+  code     String @id
+  nameEn   String
+  nameAr   String
+  category String
+}
+
+model Diagnosis {
+  id          String    @id @default(cuid())
+  encounterId String
+  code        String
+  nameEn      String
+  nameAr      String
+  isPrimary   Boolean   @default(false)
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+}
+
+model Ward {
+  id       String @id @default(cuid())
+  branchId String
+  name     String
+  nameEn   String
+  type     String
+  branch   Branch @relation(fields: [branchId], references: [id])
+  rooms    Room[]
+}
+
+model Room {
+  id     String @id @default(cuid())
+  wardId String
+  name   String
+  ward   Ward   @relation(fields: [wardId], references: [id])
+  beds   Bed[]
+}
+
+model Bed {
+  id         String      @id @default(cuid())
+  roomId     String
+  label      String
+  status     String      @default("AVAILABLE")
+  room       Room        @relation(fields: [roomId], references: [id])
+  admissions Admission[]
+}
+
+model Admission {
+  id                String           @id @default(cuid())
+  patientId         String
+  bedId             String
+  encounterId       String?
+  status            String           @default("ACTIVE")
+  diagnosis         String?
+  admittedAt        DateTime
+  dischargedAt      DateTime?
+  expectedDischarge DateTime?
+  patient           Patient          @relation(fields: [patientId], references: [id])
+  bed               Bed              @relation(fields: [bedId], references: [id])
+  encounter         Encounter?       @relation(fields: [encounterId], references: [id])
+  events            AdmissionEvent[]
+
+  @@index([status])
+}
+
+model AdmissionEvent {
+  id          String    @id @default(cuid())
+  admissionId String
+  type        String
+  fromBedId   String?
+  toBedId     String?
+  note        String?
+  byName      String?
+  at          DateTime  @default(now())
+  admission   Admission @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id          String    @id @default(cuid())
+  encounterId String
+  patientId   String
+  kind        String
+  code        String
+  name        String
+  priority    String    @default("ROUTINE")
+  status      String    @default("ORDERED")
+  orderedAt   DateTime  @default(now())
+  resultedAt  DateTime?
+  value       Float?
+  unit        String?
+  refLow      Float?
+  refHigh     Float?
+  flag        String?
+  resultText  String?
+  orderedBy   String?
+  resultedBy  String?
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  patient     Patient   @relation(fields: [patientId], references: [id])
+
+  @@index([kind, status])
+}
+
+model Drug {
+  id            String         @id @default(cuid())
+  generic       String         @unique
+  name          String
+  nameAr        String
+  form          String
+  strength      String
+  stock         Int
+  reorderLevel  Int
+  unitPrice     Float
+  prescriptions Prescription[]
+}
+
+model DrugInteraction {
+  id       String @id @default(cuid())
+  genericA String
+  genericB String
+  severity String
+  noteAr   String
+  noteEn   String
+}
+
+model Prescription {
+  id              String    @id @default(cuid())
+  encounterId     String
+  patientId       String
+  drugId          String
+  dose            String
+  frequency       String
+  days            Int
+  qty             Int
+  status          String    @default("PENDING")
+  interactionNote String?
+  prescribedAt    DateTime  @default(now())
+  dispensedAt     DateTime?
+  prescribedBy    String?
+  dispensedBy     String?
+  encounter       Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  patient         Patient   @relation(fields: [patientId], references: [id])
+  drug            Drug      @relation(fields: [drugId], references: [id])
+
+  @@index([status])
+}
+
+model Charge {
+  id          String    @id @default(cuid())
+  encounterId String
+  patientId   String
+  description String
+  category    String
+  qty         Int       @default(1)
+  unitPrice   Float
+  invoiced    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id          String     @id @default(cuid())
+  number      String     @unique
+  patientId   String
+  encounterId String?
+  type        String
+  subtotal    Float
+  vat         Float
+  total       Float
+  status      String     @default("ISSUED")
+  createdAt   DateTime   @default(now())
+  paidAt      DateTime?
+  patient     Patient    @relation(fields: [patientId], references: [id])
+  encounter   Encounter? @relation(fields: [encounterId], references: [id])
+
+  @@index([createdAt])
+}
+
+model Claim {
+  id          String    @id @default(cuid())
+  number      String    @unique
+  patientId   String
+  encounterId String
+  insurer     String
+  amount      Float
+  status      String    @default("DRAFT")
+  notes       String?
+  createdAt   DateTime  @default(now())
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  encounter   Encounter @relation(fields: [encounterId], references: [id])
+}
+
+model AuditLog {
+  id       String   @id @default(cuid())
+  userId   String?
+  userName String
+  role     String?
+  action   String
+  entity   String
+  entityId String?
+  summary  String
+  at       DateTime @default(now())
+
+  @@index([at])
+}
+
+model Package {
+  id         String  @id @default(cuid())
+  slug       String  @unique
+  nameAr     String
+  nameEn     String
+  descAr     String
+  descEn     String
+  itemsAr    String
+  itemsEn    String
+  price      Int
+  offerPrice Int?
+  audience   String
+}
+
+model Insurer {
+  id     String @id @default(cuid())
+  nameAr String
+  nameEn String
+  tier   String
+  noteAr String
+  noteEn String
+}
+
+model ArticleCategory {
+  id       String    @id @default(cuid())
+  slug     String    @unique
+  nameAr   String
+  nameEn   String
+  articles Article[]
+}
+
+model Article {
+  id          String          @id @default(cuid())
+  slug        String          @unique
+  categoryId  String
+  titleAr     String
+  titleEn     String
+  excerptAr   String
+  excerptEn   String
+  bodyAr      String
+  bodyEn      String
+  authorAr    String
+  authorEn    String
+  readMin     Int
+  publishedAt DateTime
+  category    ArticleCategory @relation(fields: [categoryId], references: [id])
+}
+
+model News {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  titleAr     String
+  titleEn     String
+  excerptAr   String
+  excerptEn   String
+  bodyAr      String
+  bodyEn      String
+  publishedAt DateTime
+}
+
+model Job {
+  id           String           @id @default(cuid())
+  slug         String           @unique
+  titleAr      String
+  titleEn      String
+  dept         String
+  deptEn       String
+  city         String
+  cityEn       String
+  type         String
+  descAr       String
+  descEn       String
+  reqAr        String
+  reqEn        String
+  postedAt     DateTime
+  open         Boolean          @default(true)
+  applications JobApplication[]
+}
+
+model JobApplication {
+  id        String   @id @default(cuid())
+  jobId     String
+  name      String
+  email     String
+  phone     String
+  cover     String?
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+  job       Job      @relation(fields: [jobId], references: [id])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  createdAt DateTime @default(now())
+}
